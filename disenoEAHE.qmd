@@ -1,0 +1,27 @@
+---
+title: Diseño de EAHE (Mérida, Yucatán)
+---
+
+## Temperatura del aire y del suelo
+
+Los valores de temperatura del aire y del suelo a diferentes profundidades en Mérida, Yucatán se obtuvieron de @lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026, un archivo *.epw (EnergyPlus Weather) que contiene datos climáticos horarios para un año meteorológico típico (TMY) calculado con los datos de 15 años (2011-2025).
+
+La temperatura del aire que entra el intercambiador de calor (Tai) se calculó como la temperatura máxima diaria media mensual del mes con la temperatura media más alta:
+
+```{python}
+from iertools.read import read_epw # Importar la función para leer archivos EPW
+# Leer el archivo EPW
+data = read_epw("data/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.epw",alias=True,year=2026)
+# Obtener el mes con la temperatura media más alta
+mes = data.To.resample("ME").mean().idxmax().month # calcular la media mensual de la temperatura exterior (To) y obtener el mes con la temperatura media más alta
+print(f"El mes con la temperatura media más alta es: {mes}")
+```
+
+```{python}
+# Obtener la temperatura máxima diaria media mensual del mes con la temperatura media más alta
+data = data.sort_index()
+Tai = data.To["2026-05-01":"2026-05-31"].resample("D").max().mean()
+print(f"La temperatura máxima diaria media mensual del mes con la temperatura media más alta es: {Tai:.1f} °C")
+```
+
+## Referencias
