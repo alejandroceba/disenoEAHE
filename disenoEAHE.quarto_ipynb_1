@@ -2,7 +2,7 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "d06b7993",
+   "id": "b7818e18",
    "metadata": {},
    "source": [
     "---\n",
@@ -19,7 +19,7 @@
   {
    "cell_type": "code",
    "execution_count": 1,
-   "id": "4edf5695",
+   "id": "995c1469",
    "metadata": {},
    "outputs": [
     {
@@ -44,7 +44,7 @@
   {
    "cell_type": "code",
    "execution_count": 2,
-   "id": "9c679b47",
+   "id": "5e78a54d",
    "metadata": {},
    "outputs": [
     {
@@ -112,16 +112,16 @@
   },
   {
    "cell_type": "markdown",
-   "id": "d793181c",
+   "id": "416689ea",
    "metadata": {},
    "source": [
-    "La la temperatura media del suelo es similar en todas las profundidades. Se eligió la temperatura del suelo a 4 m como la temperatura de la pared del intercambiador porque tiene la variación mensual más baja:"
+    "La temperatura media del suelo es similar en todas las profundidades. Se eligió la temperatura del suelo a 4 m como la temperatura de la pared del intercambiador porque tiene la variación mensual más baja:"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": 3,
-   "id": "97505352",
+   "id": "b5f64c17",
    "metadata": {},
    "outputs": [
     {
@@ -139,7 +139,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "5a30cce6",
+   "id": "bfde4446",
    "metadata": {},
    "source": [
     "## Restricciones\n",

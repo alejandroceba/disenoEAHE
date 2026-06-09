@@ -60,7 +60,7 @@ suelo.loc['Variación'] = variacion
 print(suelo.round(2))
 ```
 
-La la temperatura media del suelo es similar en todas las profundidades. Se eligió la temperatura del suelo a 4 m como la temperatura de la pared del intercambiador porque tiene la variación mensual más baja:
+La temperatura media del suelo es similar en todas las profundidades. Se eligió la temperatura del suelo a 4 m como la temperatura de la pared del intercambiador porque tiene la variación mensual más baja:
 
 ```{python}
 Tw = suelo.loc["Media", "4.0m"]

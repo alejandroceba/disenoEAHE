@@ -125,7 +125,7 @@ div.csl-indent {
 <h2 class="anchored" data-anchor-id="temperatura-del-aire-y-del-suelo">Temperatura del aire y del suelo</h2>
 <p>Los valores de temperatura del aire y del suelo a diferentes profundidades en Mérida, Yucatán se obtuvieron de <span class="citation" data-cites="lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026"><a href="#ref-lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026" role="doc-biblioref">[1]</a></span>, un archivo *.epw (EnergyPlus Weather) que contiene datos climáticos horarios para un año meteorológico típico (TMY) calculado con los datos de 15 años (2011-2025).</p>
 <p>La temperatura del aire que entra el intercambiador de calor (Tai) se calculó como la temperatura máxima diaria media mensual del mes con la temperatura media más alta:</p>
-<div id="4edf5695" class="cell" data-execution_count="1">
+<div id="a817b843" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pvlib.iotools <span class="im">import</span> read_epw <span class="co"># Importar la función para leer archivos EPW</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Leer el archivo EPW</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>datos, metadatos <span class="op">=</span> read_epw(<span class="st">"data/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.epw"</span>)</span>
@@ -138,7 +138,7 @@ div.csl-indent {
 <pre><code>El mes con la temperatura media más alta es: 5. La temperatura máxima diaria media mensual del mes con la temperatura media más alta es: 37.2 °C</code></pre>
 </div>
 </div>
-<div id="9c679b47" class="cell" data-execution_count="2">
+<div id="9c91a69e" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>months <span class="op">=</span> [<span class="st">'Ene'</span>, <span class="st">'Feb'</span>, <span class="st">'Mar'</span>, <span class="st">'Abr'</span>, <span class="st">'May'</span>, <span class="st">'Jun'</span>, <span class="st">'Jul'</span>, <span class="st">'Ago'</span>, <span class="st">'Sep'</span>, <span class="st">'Oct'</span>, <span class="st">'Nov'</span>, <span class="st">'Dic'</span>]</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>datos_suelo <span class="op">=</span> {}</span>
@@ -195,8 +195,8 @@ Media      26.84  26.86  26.88
 Variación   5.75   4.24   2.91</code></pre>
 </div>
 </div>
-<p>La la temperatura media del suelo es similar en todas las profundidades. Se eligió la temperatura del suelo a 4 m como la temperatura de la pared del intercambiador porque tiene la variación mensual más baja:</p>
-<div id="97505352" class="cell" data-execution_count="3">
+<p>La temperatura media del suelo es similar en todas las profundidades. Se eligió la temperatura del suelo a 4 m como la temperatura de la pared del intercambiador porque tiene la variación mensual más baja:</p>
+<div id="268195fe" class="cell" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>Tw <span class="op">=</span> suelo.loc[<span class="st">"Media"</span>, <span class="st">"4.0m"</span>]</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"La temperatura de la pared del intercambiador Tw = </span><span class="sc">{</span>Tw<span class="sc">:.1f}</span><span class="ss"> °C"</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
