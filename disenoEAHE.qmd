@@ -13,10 +13,11 @@ from pvlib.iotools import read_epw # Importar la función para leer archivos EPW
 # Leer el archivo EPW
 datos, metadatos = read_epw("data/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.epw")
 # Obtener el mes con la temperatura media más alta
-mes = datos.temp_air.resample("ME").mean().idxmax().month # calcular la media mensual de la temp_air y obtener el mes con la temperatura media más alta
+# calcular la media mensual de la temp_air y obtener el mes con la temperatura media más alta
+mes = datos.temp_air.resample("ME").mean().idxmax().month 
 # Obtener la temperatura máxima diaria media mensual del mes con la temperatura media más alta
 Tai = datos[datos.index.month == mes].temp_air.resample("D").max().mean()
-print(f"El mes con la temperatura media más alta es: {mes}. La temperatura máxima diaria media mensual del mes con la temperatura media más alta es: {Tai:.1f} °C")
+print(f"El mes con la temperatura media más alta es: {mes}.\n La temperatura máxima diaria media mensual del mes\n con la temperatura media más alta es: {Tai:.1f} °C")
 ```
 
 ```{python}
@@ -60,15 +61,153 @@ suelo.loc['Variación'] = variacion
 print(suelo.round(2))
 ```
 
-La temperatura media del suelo es similar en todas las profundidades. Se eligió la temperatura del suelo a 4 m como la temperatura de la pared del intercambiador porque tiene la variación mensual más baja:
+La temperatura media del suelo es similar en todas las profundidades y la temperatura a 4 m de profundidad tiene la menor variación mensual a lo largo del año. De acuerdo con el modelo numérico de @driss_cfd_2018, la temperatura del aire dentro de un intercambiador de calor tierra-aire (EAHE, por sus siglas en inglés) tubular horizontal de 0.15 m de diámetro disminuye 1.6 ºC por cada incremento en la profundidad de 0.5 m en Mérida el día más cálido (20/05 12:00, temp_air = 39.8 ºC). La temperatura a 4 m de profundidad fue $\approx$ 29.6 ºC, y la temperatura a 4.5 m de profundidad, reportada como la profundiad óptima, fue $\approx$ 28 ºC. Estas temperaturas sobrestiman la temperatura del suelo alrededor del EAHE porque fueron calculadas para el día más cálido en el interior del tubo (al que entra aire a temp_air). Sin embargo, concuerdan con que la media de la temperatura del suelo a 4 m de profundidad en mayo reportada en el EPW @lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026 es una aproximación que tiene una variación máxima de $\pm$ 3 ºC a lo largo del año. Por lo tanto, se eligió la temperatura del suelo a 4 m en mayo como la temperatura de la pared del intercambiador:
 
 ```{python}
-Tw = suelo.loc["Media", "4.0m"]
-print(f"La temperatura de la pared del intercambiador Tw = {Tw:.1f} °C")
+Tw = suelo.loc["May", "4.0m"]
+print(f"La temperatura de la pared del intercambiador es Tw = {Tw:.1f} °C")
 ```
+
+Se supone que las propiedades físicas del suelo de Mérida (tipo arcilloso) son constantes: conductividad térmica k_s = 0.19 W / m ºC, calor específico cp_s = 114.6 kJ / kg ºC @rodriguez-vazquez_thermal_2020. 
 
 ## Restricciones
 
+La efectividad ($\epsilon$) de un EAHE se puede calcular con la @eq-epsilon:
 
+$$ \epsilon = \frac{Tao - Tai}{Tw - Tai}, $$ {#eq-epsilon}
+
+donde Tao es la temperatura del aire a la salida del intercambiador. Se estableció que la efectividad mínima de diseño es $\epsilon\geq$ 0.7, lo que implica que:
+
+```{python}
+epsilon = 0.7
+Tao = epsilon * (Tw - Tai) + Tai
+print(f"Tao ≤ {Tao:.1f} °C.")
+```
+
+Los cambios de aire por hora (CAH) requeridos son:
+
+```{python}
+CAH = 6
+```
+Para un local de dimensiones 3 m x 3 m x 3 m, el volumen es:
+
+```{python}
+V = 27 # m³
+```
+El caudal volumétrico de aire (Q) requerido es:
+
+```{python}
+Q = CAH * V / 3600
+print(f"Q = {Q:.4f} m³/s.")
+```
+
+Para tubos de PVC de diámetro exterior (D) de 2, 3, 4 y 5 pulgadas y 0.15 m:
+
+```{python}
+import numpy as np
+D = np.array([0.063, 0.090, 0.110, 0.140, 0.150]) # m
+```
+
+la velocidad del aire (v) dentro de los tubos son:
+
+```{python}
+A = np.pi * (D / 2) ** 2
+v = Q / A   
+print(f"{v.round(2)} m/s.")
+```
+
+El número de Reynolds (Re) para cada diámetro se calcula con la @eq-reynolds @incropera_fundamentals_2007:
+
+$$ Re = \frac{\rho v D}{\mu}, $$ {#eq-reynolds}
+
+donde $\rho=1.1614$ kg/m³ es la densidad del aire y $\mu=1.846$ x 10⁻⁵ N·s/m² es la viscosidad dinámica del aire a 300 K @incropera_fundamentals_2007:
+
+```{python}
+rho = 1.1614 # kg/m³
+mu = 1.846e-5 # N·s/m²
+Re = (rho * v * D) / mu
+print(f"{Re.round(0)}.")
+```
+## Longitud mínima del tubo
+
+La efectividad se relaciona con el número de unidades de transferencia de calor (NTU) de acuerdo con la @eq-epsilonntu:
+
+$$ \epsilon = 1 - e^{-NTU}. $$ {#eq-epsilonntu}
+
+NTU se calcula con la @eq-ntu:
+
+$$ NTU = \frac{h A}{\dot{m} c_p}, $$ {#eq-ntu}
+
+donde h (W/m²·K) es el coeficiente de transferencia de calor por convección, A (m²) es el área de transferencia de calor ($A=\pi D L$ para un tubo de longitud L), $\dot{m}=\rho Q$ (kg/s) es el flujo másico del aire y cp = 1.007 kJ/kg·K es el calor específico del aire @incropera_fundamentals_2007.
+
+El coeficiente de transferencia de calor por convección se calcula con la @eq-h @incropera_fundamentals_2007:
+
+$$ h = \frac{Nuk}{D}, $$ {#eq-h}
+
+donde k=2.63 x 10⁻² W/m·K es la conductividad térmica del aire a 300 K y Nu es el número de Nusselt, que se calcula con la @eq-nu para flujo turbulento (2300 < Re < 5 x 10⁶) @incropera_fundamentals_2007:
+
+$$ Nu = \frac{\frac{\varepsilon}{8} (Re - 1000) Pr}{1 + 12.7 (\varepsilon / 8)^{1/2} (Pr^{2/3} - 1)},\ 0.5 < Pr < 10^6 $$ {#eq-nu}
+
+donde $\varepsilon$ es la rugosidad relativa del tubo, que se calcula con la @eq-rugosidad @anaya-durand_evaluacion_2014:
+
+$$ \varepsilon = (1.82 \log_{10}(Re) - 1.64)^{-2}, $$ {#eq-rugosidad}
+
+y Pr=0.707 es el número de Prandtl @incropera_fundamentals_2007.
+
+Despejando la @eq-ntu para L y sustituyendo las ecuaciones anteriores, se obtiene la longitud mínima del tubo (L) requerida para alcanzar la efectividad de diseño:
+
+$$ L = \frac{NTUc_p\rho Q}{\pi Nu k}. $$ {#eq-L}
+
+Despejando la @eq-epsilonntu para NTU y sustituyendo en la ecuación anterior, se obtiene:
+
+$$ L = \frac{-\ln(1 - \epsilon) c_p \rho Q}{\pi Nu k}. $$ {#eq-L2}
+
+```{python}
+# Constantes
+cp = 1.007e3 # J/kg·K
+k = 2.63e-2 # W/m·K
+Pr = 0.707
+# Cálculo de la rugosidad relativa
+varepsilon = (1.82 * np.log10(Re) - 1.64) ** (-2)
+# Cálculo del número de Nusselt
+Nu = (varepsilon / 8 * (Re - 1000) * Pr) / (1 + 12.7 * (varepsilon / 8) ** 0.5 * (Pr ** (2/3) - 1))
+# Cálculo de la longitud mínima del tubo
+L = (-np.log(1 - epsilon) * cp * rho * Q) / (np.pi * Nu * k)
+print(f"Nu = {Nu.round(2)}.")
+print(f"L = {L.round(2)} m.")
+```
+
+Se observa que L aumenta con el diámetro del tubo debido a que la velocidad del aire disminuye, lo que reduce el número de Reynolds y, por lo tanto, el número de Nusselt y el coeficiente de transferencia de calor por convección. Para tubos de 2, 3, 4 y 5 pulgadas, la longitud mínima requerida para alcanzar la efectividad de diseño es de aproximadamente 6.6, 8.7, 10.15 y 12.23 m, respectivamente. Para un tubo de 0.15 m de diámetro, la longitud mínima requerida es de aproximadamente 12.9 m. La viabilidad económica de instalar tubos de cada diámetro depende de evaluar las caídas de presión en un sistema con tubos de cada diámetro. Tomando en cuenta las dimensiones del local, se podrían instalar tramos de 3 m de longitud aproximadamente, de forma que se necesitarían 2 tubos de 2 pulgadas o 4 tubos de 5 pulgadas para alcanzar la longitud mínima requerida. Aunque el tubo de mayor diámetro implicaría mayores caídas de presión por codos y mayor costo por tubo, se tendrían que evaluar las caídas de presión de todo el sistema para determinar qué opción es más viable económicamente. En la siguiente gráfica se observa la relación entre la longitud del tubo y la efectividad para cada diámetro:
+
+```{python}
+import matplotlib.pyplot as plt
+epsilon = np.linspace(0.01, 0.99, 100)
+
+plt.figure(figsize=(10, 6))
+
+# Iterar sobre valores de Re y D simultáneamente
+for Re, d_val in zip(Re, D):
+    # Cálculo de la rugosidad relativa
+    varepsilon = (1.82 * np.log10(Re) - 1.64) ** (-2)
+    
+    # Cálculo del número de Nusselt
+    Nu = (varepsilon / 8 * (Re - 1000) * Pr) / (1 + 12.7 * (varepsilon / 8) ** 0.5 * (Pr ** (2/3) - 1))
+    
+    # Cálculo de la longitud mínima del tubo L
+    L = (-np.log(1 - epsilon) * cp * rho * Q) / (np.pi * Nu * k)
+    
+    # Gráfica epsilon vs L para cada diámetro
+    plt.plot(L, epsilon, label=f'D = {d_val} m')
+
+# Línea horizontal en epsilon = 0.7
+plt.axhline(y=0.7, color='black', linestyle='--', linewidth=2, label=r'$\epsilon = 0.7$')
+
+plt.xlabel('$L$ [m]')
+plt.ylabel(r'$\epsilon$ [-]')
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.legend()
+```
+
+Se observa que para $\epsilon$ = 0.6, la longitud mínima de los tubos de todos los diámetros es menor a 10 m, por lo que si se considera esta efectividad en el diseño, se podría seleccionar el diámetro de tubo que minimice los costos del material y las caídas de presión y mantener la longitud de los tubos por debajo de 10 m. Se tendría que evaluar si la Tao a una efectividad de 0.6 es suficiente para el confort térmico del local y también habría que evaluar la diferencia de Tao entre una efectividad de 0.6 y una efectividad de 0.7 para determinar si la reducción en la longitud del tubo justifica la reducción en la efectividad.
 
 ## Referencias

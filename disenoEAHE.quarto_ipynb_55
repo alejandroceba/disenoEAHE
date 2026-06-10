@@ -1,0 +1,418 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "147c3f5f",
+   "metadata": {},
+   "source": [
+    "---\n",
+    "title: Diseño de EAHE (Mérida, Yucatán)\n",
+    "---\n",
+    "\n",
+    "## Temperatura del aire y del suelo\n",
+    "\n",
+    "Los valores de temperatura del aire y del suelo a diferentes profundidades en Mérida, Yucatán se obtuvieron de @lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026, un archivo *.epw (EnergyPlus Weather) que contiene datos climáticos horarios para un año meteorológico típico (TMY) calculado con los datos de 15 años (2011-2025).\n",
+    "\n",
+    "La temperatura del aire que entra el intercambiador de calor (Tai) se calculó como la temperatura máxima diaria media mensual del mes con la temperatura media más alta:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "96fa39e6",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "El mes con la temperatura media más alta es: 5. La temperatura máxima diaria media mensual del mes con la temperatura media más alta es: 37.2 °C\n"
+     ]
+    }
+   ],
+   "source": [
+    "from pvlib.iotools import read_epw # Importar la función para leer archivos EPW\n",
+    "# Leer el archivo EPW\n",
+    "datos, metadatos = read_epw(\"data/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.epw\")\n",
+    "# Obtener el mes con la temperatura media más alta\n",
+    "mes = datos.temp_air.resample(\"ME\").mean().idxmax().month # calcular la media mensual de la temp_air y obtener el mes con la temperatura media más alta\n",
+    "# Obtener la temperatura máxima diaria media mensual del mes con la temperatura media más alta\n",
+    "Tai = datos[datos.index.month == mes].temp_air.resample(\"D\").max().mean()\n",
+    "print(f\"El mes con la temperatura media más alta es: {mes}. La temperatura máxima diaria media mensual del mes con la temperatura media más alta es: {Tai:.1f} °C\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "314957e8",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "            0.5m   2.0m   4.0m\n",
+      "Ene        24.28  25.23  26.01\n",
+      "Feb        24.02  24.77  25.54\n",
+      "Mar        24.48  24.86  25.44\n",
+      "Abr        25.20  25.24  25.58\n",
+      "May        27.06  26.49  26.29\n",
+      "Jun        28.51  27.62  27.05\n",
+      "Jul        29.48  28.53  27.75\n",
+      "Ago        29.77  29.01  28.23\n",
+      "Sep        29.27  28.91  28.35\n",
+      "Oct        28.15  28.27  28.07\n",
+      "Nov        26.65  27.24  27.47\n",
+      "Dic        25.27  26.15  26.73\n",
+      "Media      26.84  26.86  26.88\n",
+      "Variación   5.75   4.24   2.91\n"
+     ]
+    }
+   ],
+   "source": [
+    "import pandas as pd\n",
+    "months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']\n",
+    "datos_suelo = {}\n",
+    "\n",
+    "with open('data/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.epw', 'r') as f:\n",
+    "    for line in f:\n",
+    "        if line.startswith('DATA PERIODS'):\n",
+    "            break\n",
+    "            \n",
+    "        if line.startswith('GROUND TEMPERATURES'):\n",
+    "            parts = line.strip().split(',')\n",
+    "            tokens = parts[2:]\n",
+    "            \n",
+    "            i = 0\n",
+    "            while i < len(tokens):\n",
+    "                if tokens[i] == '':\n",
+    "                    i += 1\n",
+    "                    continue\n",
+    "                \n",
+    "                depth = float(tokens[i])\n",
+    "                i += 4 \n",
+    "                \n",
+    "                monthly_values = []\n",
+    "                for _ in range(12):\n",
+    "                    monthly_values.append(float(tokens[i]))\n",
+    "                    i += 1\n",
+    "                \n",
+    "                datos_suelo[f\"{depth}m\"] = monthly_values\n",
+    "\n",
+    "suelo = pd.DataFrame(datos_suelo, index=months)\n",
+    "\n",
+    "media = suelo.mean()\n",
+    "variacion = suelo.max() - suelo.min()\n",
+    "\n",
+    "suelo.loc['Media'] = media\n",
+    "suelo.loc['Variación'] = variacion\n",
+    "\n",
+    "print(suelo.round(2))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5a2d2cfa",
+   "metadata": {},
+   "source": [
+    "La temperatura media del suelo es similar en todas las profundidades y la temperatura a 4 m de profundidad tiene la menor variación mensual a lo largo del año. De acuerdo con el modelo numérico de @driss_cfd_2018, la temperatura del aire dentro de un intercambiador de calor tierra-aire (EAHE, por sus siglas en inglés) tubular horizontal de 0.15 m de diámetro disminuye 1.6 ºC por cada incremento en la profundidad de 0.5 m en Mérida el día más cálido (20/05 12:00, temp_air = 39.8 ºC). La temperatura a 4 m de profundidad fue $\\approx$ 29.6 ºC, y la temperatura a 4.5 m de profundidad, reportada como la profundiad óptima, fue $\\approx$ 28 ºC. Estas temperaturas sobrestiman la temperatura del suelo alrededor del EAHE porque fueron calculadas para el día más cálido en el interior del tubo (al que entra aire a temp_air). Sin embargo, concuerdan con que la media de la temperatura del suelo a 4 m de profundidad en mayo reportada en el EPW @lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026 es una aproximación que tiene una variación máxima de $\\pm$ 3 ºC a lo largo del año. Por lo tanto, se eligió la temperatura del suelo a 4 m en mayo como la temperatura de la pared del intercambiador:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "37047c21",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "La temperatura de la pared del intercambiador es Tw = 26.3 °C\n"
+     ]
+    }
+   ],
+   "source": [
+    "Tw = suelo.loc[\"May\", \"4.0m\"]\n",
+    "print(f\"La temperatura de la pared del intercambiador es Tw = {Tw:.1f} °C\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "3f7b3305",
+   "metadata": {},
+   "source": [
+    "Se supone que las propiedades físicas del suelo de Mérida (tipo arcilloso) son constantes: conductividad térmica k_s = 0.19 W / m ºC, calor específico cp_s = 114.6 kJ / kg ºC @rodriguez-vazquez_thermal_2020. \n",
+    "\n",
+    "## Restricciones\n",
+    "\n",
+    "La efectividad ($\\epsilon$) de un EAHE se puede calcular con la @eq-epsilon:\n",
+    "\n",
+    "$$ \\epsilon = \\frac{Tao - Tai}{Tw - Tai}, $$ {#eq-epsilon}\n",
+    "\n",
+    "donde Tao es la temperatura del aire a la salida del intercambiador. Se estableció que la efectividad mínima de diseño es $\\epsilon\\geq$ 0.7, lo que implica que:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "dbf677bc",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Tao ≤ 29.6 °C.\n"
+     ]
+    }
+   ],
+   "source": [
+    "epsilon = 0.7\n",
+    "Tao = epsilon * (Tw - Tai) + Tai\n",
+    "print(f\"Tao ≤ {Tao:.1f} °C.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "156c8f07",
+   "metadata": {},
+   "source": [
+    "Los cambios de aire por hora (CAH) requeridos son:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "6dd1b598",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "CAH = 6"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "76e742d5",
+   "metadata": {},
+   "source": [
+    "Para un local de dimensiones 3 m x 3 m x 3 m, el volumen es:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "66d29ec4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "V = 27 # m³"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b57b9bf3",
+   "metadata": {},
+   "source": [
+    "El caudal volumétrico de aire (Q) requerido es:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "ac1375a6",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Q = 0.0450 m³/s.\n"
+     ]
+    }
+   ],
+   "source": [
+    "Q = CAH * V / 3600\n",
+    "print(f\"Q = {Q:.4f} m³/s.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4745d2fa",
+   "metadata": {},
+   "source": [
+    "Para tubos de PVC de diámetro exterior (D) de 2, 3, 4 y 5 pulgadas y 0.15 m:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "cea12530",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "D = np.array([0.063, 0.090, 0.110, 0.140, 0.150]) # m"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f924a976",
+   "metadata": {},
+   "source": [
+    "la velocidad del aire (v) dentro de los tubos son:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "2963d2d8",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[14.44  7.07  4.74  2.92  2.55] m/s.\n"
+     ]
+    }
+   ],
+   "source": [
+    "A = np.pi * (D / 2) ** 2\n",
+    "v = Q / A   \n",
+    "print(f\"{v.round(2)} m/s.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8a40fc25",
+   "metadata": {},
+   "source": [
+    "El número de Reynolds (Re) para cada diámetro se calcula con la @eq-reynolds @incropera_fundamentals_2007:\n",
+    "\n",
+    "$$ Re = \\frac{\\rho v D}{\\mu}, $$ {#eq-reynolds}\n",
+    "\n",
+    "donde $\\rho=1.1614$ kg/m³ es la densidad del aire y $\\mu=1.846$ x 10⁻⁵ N·s/m² es la viscosidad dinámica del aire a 300 K @incropera_fundamentals_2007:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "dc4c32c5",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[57218. 40053. 32770. 25748. 24032.].\n"
+     ]
+    }
+   ],
+   "source": [
+    "rho = 1.1614 # kg/m³\n",
+    "mu = 1.846e-5 # N·s/m²\n",
+    "Re = (rho * v * D) / mu\n",
+    "print(f\"{Re.round(0)}.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "3f754bef",
+   "metadata": {},
+   "source": [
+    "## Longitud mínima del tubo\n",
+    "\n",
+    "La efectividad se relaciona con el número de unidades de transferencia de calor (NTU) de acuerdo con la @eq-epsilonntu:\n",
+    "\n",
+    "$$ \\epsilon = 1 - e^{-NTU}. $$ {#eq-epsilonntu}\n",
+    "\n",
+    "NTU se calcula con la @eq-ntu:\n",
+    "\n",
+    "$$ NTU = \\frac{h A}{\\dot{m} c_p}, $$ {#eq-ntu}\n",
+    "\n",
+    "donde h (W/m²·K) es el coeficiente de transferencia de calor por convección, A (m²) es el área de transferencia de calor ($A=\\pi D L$ para un tubo de longitud L), $\\dot{m}=\\rho Q$ (kg/s) es el flujo másico del aire y cp = 1.007 kJ/kg·K es el calor específico del aire @incropera_fundamentals_2007.\n",
+    "\n",
+    "El coeficiente de transferencia de calor por convección se calcula con la @eq-h @incropera_fundamentals_2007:\n",
+    "\n",
+    "$$ h = \\frac{Nuk}{D}, $$ {#eq-h}\n",
+    "\n",
+    "donde k=2.63 x 10⁻² W/m·K es la conductividad térmica del aire a 300 K y Nu es el número de Nusselt, que se calcula con la @eq-nu para flujo turbulento (2300 < Re < 5 x 10⁶) @incropera_fundamentals_2007:\n",
+    "\n",
+    "$$ Nu = \\frac{\\frac{\\varepsilon}{8} (Re - 1000) Pr}{1 + 12.7 (\\varepsilon / 8)^{1/2} (Pr^{2/3} - 1)},\\ 0.5 < Pr < 10^6 $$ {#eq-nu}\n",
+    "\n",
+    "donde $\\varepsilon$ es la rugosidad relativa del tubo, que se calcula con la @eq-rugosidad @anaya-durand_evaluacion_2014:\n",
+    "\n",
+    "$$ \\varepsilon = (1.82 \\log_{10}(Re) - 1.64)^{-2}, $$ {#eq-rugosidad}\n",
+    "\n",
+    "y Pr=0.707 es el número de Prandtl @incropera_fundamentals_2007.\n",
+    "\n",
+    "Despejando la @eq-ntu para L y sustituyendo las ecuaciones anteriores, se obtiene la longitud mínima del tubo (L) requerida para alcanzar la efectividad de diseño:\n",
+    "\n",
+    "$$ L = \\frac{NTUc_p\\rho Q}{\\pi Nu k}. $$ {#eq-L}\n",
+    "\n",
+    "Despejando la @eq-epsilonntu para NTU y sustituyendo en la ecuación anterior, se obtiene:\n",
+    "\n",
+    "$$ L = \\frac{-\\ln(1 - \\epsilon) c_p \\rho Q}{\\pi Nu k}. $$ {#eq-L2}"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "ead1356b",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[ 6.6   8.7  10.15 12.23 12.9 ] m.\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Constantes\n",
+    "cp = 1.007e3 # J/kg·K\n",
+    "k = 2.63e-2 # W/m·K\n",
+    "Pr = 0.707\n",
+    "# Cálculo de la rugosidad relativa\n",
+    "varepsilon = (1.82 * np.log10(Re) - 1.64) ** (-2)\n",
+    "# Cálculo del número de Nusselt\n",
+    "Nu = (varepsilon / 8 * (Re - 1000) * Pr) / (1 + 12.7 * (varepsilon / 8) ** 0.5 * (Pr ** (2/3) - 1))\n",
+    "# Cálculo de la longitud mínima del tubo\n",
+    "L = (-np.log(1 - epsilon) * cp * rho * Q) / (np.pi * Nu * k)\n",
+    "print(f\"{L.round(2)} m.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "19538cb4",
+   "metadata": {},
+   "source": [
+    "## Referencias"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3",
+   "path": "/home/acb/disenoEAHE/.venv/share/jupyter/kernels/python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.13.12"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

@@ -1,0 +1,320 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "c85edfde",
+   "metadata": {},
+   "source": [
+    "---\n",
+    "title: Diseño de EAHE (Mérida, Yucatán)\n",
+    "---\n",
+    "\n",
+    "## Temperatura del aire y del suelo\n",
+    "\n",
+    "Los valores de temperatura del aire y del suelo a diferentes profundidades en Mérida, Yucatán se obtuvieron de @lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026, un archivo *.epw (EnergyPlus Weather) que contiene datos climáticos horarios para un año meteorológico típico (TMY) calculado con los datos de 15 años (2011-2025).\n",
+    "\n",
+    "La temperatura del aire que entra el intercambiador de calor (Tai) se calculó como la temperatura máxima diaria media mensual del mes con la temperatura media más alta:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "87d5b1a8",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "El mes con la temperatura media más alta es: 5. La temperatura máxima diaria media mensual del mes con la temperatura media más alta es: 37.2 °C\n"
+     ]
+    }
+   ],
+   "source": [
+    "from pvlib.iotools import read_epw # Importar la función para leer archivos EPW\n",
+    "# Leer el archivo EPW\n",
+    "datos, metadatos = read_epw(\"data/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.epw\")\n",
+    "# Obtener el mes con la temperatura media más alta\n",
+    "mes = datos.temp_air.resample(\"ME\").mean().idxmax().month # calcular la media mensual de la temp_air y obtener el mes con la temperatura media más alta\n",
+    "# Obtener la temperatura máxima diaria media mensual del mes con la temperatura media más alta\n",
+    "Tai = datos[datos.index.month == mes].temp_air.resample(\"D\").max().mean()\n",
+    "print(f\"El mes con la temperatura media más alta es: {mes}. La temperatura máxima diaria media mensual del mes con la temperatura media más alta es: {Tai:.1f} °C\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "d0a38d6b",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "            0.5m   2.0m   4.0m\n",
+      "Ene        24.28  25.23  26.01\n",
+      "Feb        24.02  24.77  25.54\n",
+      "Mar        24.48  24.86  25.44\n",
+      "Abr        25.20  25.24  25.58\n",
+      "May        27.06  26.49  26.29\n",
+      "Jun        28.51  27.62  27.05\n",
+      "Jul        29.48  28.53  27.75\n",
+      "Ago        29.77  29.01  28.23\n",
+      "Sep        29.27  28.91  28.35\n",
+      "Oct        28.15  28.27  28.07\n",
+      "Nov        26.65  27.24  27.47\n",
+      "Dic        25.27  26.15  26.73\n",
+      "Media      26.84  26.86  26.88\n",
+      "Variación   5.75   4.24   2.91\n"
+     ]
+    }
+   ],
+   "source": [
+    "import pandas as pd\n",
+    "months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']\n",
+    "datos_suelo = {}\n",
+    "\n",
+    "with open('data/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.epw', 'r') as f:\n",
+    "    for line in f:\n",
+    "        if line.startswith('DATA PERIODS'):\n",
+    "            break\n",
+    "            \n",
+    "        if line.startswith('GROUND TEMPERATURES'):\n",
+    "            parts = line.strip().split(',')\n",
+    "            tokens = parts[2:]\n",
+    "            \n",
+    "            i = 0\n",
+    "            while i < len(tokens):\n",
+    "                if tokens[i] == '':\n",
+    "                    i += 1\n",
+    "                    continue\n",
+    "                \n",
+    "                depth = float(tokens[i])\n",
+    "                i += 4 \n",
+    "                \n",
+    "                monthly_values = []\n",
+    "                for _ in range(12):\n",
+    "                    monthly_values.append(float(tokens[i]))\n",
+    "                    i += 1\n",
+    "                \n",
+    "                datos_suelo[f\"{depth}m\"] = monthly_values\n",
+    "\n",
+    "suelo = pd.DataFrame(datos_suelo, index=months)\n",
+    "\n",
+    "media = suelo.mean()\n",
+    "variacion = suelo.max() - suelo.min()\n",
+    "\n",
+    "suelo.loc['Media'] = media\n",
+    "suelo.loc['Variación'] = variacion\n",
+    "\n",
+    "print(suelo.round(2))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8f167a10",
+   "metadata": {},
+   "source": [
+    "La temperatura media del suelo es similar en todas las profundidades y la temperatura a 4 m de profundidad tiene la menor variación mensual a lo largo del año. De acuerdo con el modelo numérico de @driss_cfd_2018, la temperatura del aire dentro de un EAHE tubular horizontal de 0.15 m de diámetro disminuye 1.6 ºC por cada incremento en la profundidad de 0.5 m en Mérida el día más cálido (20/05 12:00, temp_air = 39.8 ºC). La temperatura a 4 m de profundidad fue $\\approx$ 29.6 ºC, y la temperatura a 4.5 m de profundidad, reportada como la profundiad óptima, fue $\\approx$ 28 ºC. Estas temperaturas sobrestiman la temperatura del suelo alrededor del EAHE porque fueron calculadas para el día más cálido en el interior del tubo (al que entra aire a temp_air). Sin embargo, concuerdan con que la media de la temperatura del suelo a 4 m de profundidad en mayo reportada en el EPW @lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026 es una aproximación que tiene una variación máxima de $\\pm$ 3 ºC a lo largo del año. Por lo tanto, se eligió la temperatura del suelo a 4 m en mayo como la temperatura de la pared del intercambiador:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "bc0275b8",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "La temperatura de la pared del intercambiador es Tw = 26.3 °C\n"
+     ]
+    }
+   ],
+   "source": [
+    "Tw = suelo.loc[\"May\", \"4.0m\"]\n",
+    "print(f\"La temperatura de la pared del intercambiador es Tw = {Tw:.1f} °C\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a9223a0d",
+   "metadata": {},
+   "source": [
+    "Se supone que las propiedades físicas del suelo de Mérida (tipo arcilloso) son constantes: conductividad térmica k = 0.19 W / m ºC, calor específico cp = 114.6 kJ / kg ºC @rodriguez-vazquez_thermal_2020. \n",
+    "\n",
+    "## Restricciones\n",
+    "\n",
+    "La efectividad ($\\epsilon$) de un EAHE se puede calcular con la @eq-epsilon:\n",
+    "\n",
+    "$$ \\epsilon = \\frac{Tao - Tai}{Tw - Tai}, $$ {#eq-epsilon}\n",
+    "\n",
+    "donde Tao es la temperatura del aire a la salida del intercambiador. Se estableció que la efectividad mínima de diseño es $\\epsilon\\geq$ 0.7, lo que implica que:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "72e84db7",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Tao ≤ 29.6 °C.\n"
+     ]
+    }
+   ],
+   "source": [
+    "epsilon = 0.7\n",
+    "Tao = epsilon * (Tw - Tai) + Tai\n",
+    "print(f\"Tao ≤ {Tao:.1f} °C.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6597e1a2",
+   "metadata": {},
+   "source": [
+    "Los cambios de aire por hora (CAH) requeridos son:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "dc49b87f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "CAH = 6"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0bcb5636",
+   "metadata": {},
+   "source": [
+    "Para un local de dimensiones 3 m x 3 m x 3 m, el volumen es:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "4cf7516f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "V = 27"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4bb050de",
+   "metadata": {},
+   "source": [
+    "El caudal volumétrico de aire (Q) requerido es:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "63b20cab",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Q = 0.0450 m³/s.\n"
+     ]
+    }
+   ],
+   "source": [
+    "Q = CAH * V / 3600\n",
+    "print(f\"Q = {Q:.4f} m³/s.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9d2130a0",
+   "metadata": {},
+   "source": [
+    "Para tubos de diámetro exterior (D) de 2, 3, 4 y 5 pulgadas y 0.15 m:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "736d0235",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "D = np.array([0.063, 0.090, 0.110, 0.140, 0.150]) # m"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "97d538a0",
+   "metadata": {},
+   "source": [
+    "la velocidad del aire (v) dentro de los tubos es:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "2c4cd076",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[14.44  7.07  4.74  2.92  2.55]\n",
+      "Las velocidades del aire dentro de los tubos son: [14.44  7.07  4.74  2.92  2.55] m/s.\n"
+     ]
+    }
+   ],
+   "source": [
+    "import numpy as np\n",
+    "A = np.pi * (D / 2) ** 2\n",
+    "v = Q / A\n",
+    "print(v.round(2))\n",
+    "print(f\"Las velocidades del aire dentro de los tubos son: {v.round(2)} m/s.\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "14501114",
+   "metadata": {},
+   "source": [
+    "## Referencias"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3",
+   "path": "/home/acb/disenoEAHE/.venv/share/jupyter/kernels/python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.13.12"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

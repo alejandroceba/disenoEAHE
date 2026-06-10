@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="es-MX" xml:lang="es-MX"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.37">
+<meta name="generator" content="quarto-1.9.36">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -88,11 +88,40 @@ div.csl-indent {
 <script src="disenoEAHE_files/libs/quarto-html/tippy.umd.min.js"></script>
 <script src="disenoEAHE_files/libs/quarto-html/anchor.min.js"></script>
 <link href="disenoEAHE_files/libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="disenoEAHE_files/libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="disenoEAHE_files/libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="disenoEAHE_files/libs/bootstrap/bootstrap.min.js"></script>
 <link href="disenoEAHE_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="disenoEAHE_files/libs/bootstrap/bootstrap-a9c49a76390bc7a64be4dd482d642246.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="disenoEAHE_files/libs/bootstrap/bootstrap-1ebeed31167a0ad25fd9d37c53f7d8a2.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -125,20 +154,23 @@ div.csl-indent {
 <h2 class="anchored" data-anchor-id="temperatura-del-aire-y-del-suelo">Temperatura del aire y del suelo</h2>
 <p>Los valores de temperatura del aire y del suelo a diferentes profundidades en Mérida, Yucatán se obtuvieron de <span class="citation" data-cites="lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026"><a href="#ref-lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026" role="doc-biblioref">[1]</a></span>, un archivo *.epw (EnergyPlus Weather) que contiene datos climáticos horarios para un año meteorológico típico (TMY) calculado con los datos de 15 años (2011-2025).</p>
 <p>La temperatura del aire que entra el intercambiador de calor (Tai) se calculó como la temperatura máxima diaria media mensual del mes con la temperatura media más alta:</p>
-<div id="a817b843" class="cell" data-execution_count="1">
+<div id="881b3245" class="cell" data-execution_count="1">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pvlib.iotools <span class="im">import</span> read_epw <span class="co"># Importar la función para leer archivos EPW</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Leer el archivo EPW</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>datos, metadatos <span class="op">=</span> read_epw(<span class="st">"data/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.epw"</span>)</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Obtener el mes con la temperatura media más alta</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>mes <span class="op">=</span> datos.temp_air.resample(<span class="st">"ME"</span>).mean().idxmax().month <span class="co"># calcular la media mensual de la temp_air y obtener el mes con la temperatura media más alta</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Obtener la temperatura máxima diaria media mensual del mes con la temperatura media más alta</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>Tai <span class="op">=</span> datos[datos.index.month <span class="op">==</span> mes].temp_air.resample(<span class="st">"D"</span>).<span class="bu">max</span>().mean()</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"El mes con la temperatura media más alta es: </span><span class="sc">{</span>mes<span class="sc">}</span><span class="ss">. La temperatura máxima diaria media mensual del mes con la temperatura media más alta es: </span><span class="sc">{</span>Tai<span class="sc">:.1f}</span><span class="ss"> °C"</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co"># calcular la media mensual de la temp_air y obtener el mes con la temperatura media más alta</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>mes <span class="op">=</span> datos.temp_air.resample(<span class="st">"ME"</span>).mean().idxmax().month </span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Obtener la temperatura máxima diaria media mensual del mes con la temperatura media más alta</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>Tai <span class="op">=</span> datos[datos.index.month <span class="op">==</span> mes].temp_air.resample(<span class="st">"D"</span>).<span class="bu">max</span>().mean()</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"El mes con la temperatura media más alta es: </span><span class="sc">{</span>mes<span class="sc">}</span><span class="ss">.</span><span class="ch">\n</span><span class="ss"> La temperatura máxima diaria media mensual del mes</span><span class="ch">\n</span><span class="ss"> con la temperatura media más alta es: </span><span class="sc">{</span>Tai<span class="sc">:.1f}</span><span class="ss"> °C"</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>El mes con la temperatura media más alta es: 5. La temperatura máxima diaria media mensual del mes con la temperatura media más alta es: 37.2 °C</code></pre>
+<pre><code>El mes con la temperatura media más alta es: 5.
+ La temperatura máxima diaria media mensual del mes
+ con la temperatura media más alta es: 37.2 °C</code></pre>
 </div>
 </div>
-<div id="9c91a69e" class="cell" data-execution_count="2">
+<div id="09d1cd15" class="cell" data-execution_count="2">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>months <span class="op">=</span> [<span class="st">'Ene'</span>, <span class="st">'Feb'</span>, <span class="st">'Mar'</span>, <span class="st">'Abr'</span>, <span class="st">'May'</span>, <span class="st">'Jun'</span>, <span class="st">'Jul'</span>, <span class="st">'Ago'</span>, <span class="st">'Sep'</span>, <span class="st">'Oct'</span>, <span class="st">'Nov'</span>, <span class="st">'Dic'</span>]</span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>datos_suelo <span class="op">=</span> {}</span>
@@ -195,17 +227,145 @@ Media      26.84  26.86  26.88
 Variación   5.75   4.24   2.91</code></pre>
 </div>
 </div>
-<p>La temperatura media del suelo es similar en todas las profundidades. Se eligió la temperatura del suelo a 4 m como la temperatura de la pared del intercambiador porque tiene la variación mensual más baja:</p>
-<div id="268195fe" class="cell" data-execution_count="3">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>Tw <span class="op">=</span> suelo.loc[<span class="st">"Media"</span>, <span class="st">"4.0m"</span>]</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"La temperatura de la pared del intercambiador Tw = </span><span class="sc">{</span>Tw<span class="sc">:.1f}</span><span class="ss"> °C"</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<p>La temperatura media del suelo es similar en todas las profundidades y la temperatura a 4 m de profundidad tiene la menor variación mensual a lo largo del año. De acuerdo con el modelo numérico de <span class="citation" data-cites="driss_cfd_2018"><a href="#ref-driss_cfd_2018" role="doc-biblioref">[2]</a></span>, la temperatura del aire dentro de un intercambiador de calor tierra-aire (EAHE, por sus siglas en inglés) tubular horizontal de 0.15 m de diámetro disminuye 1.6 ºC por cada incremento en la profundidad de 0.5 m en Mérida el día más cálido (20/05 12:00, temp_air = 39.8 ºC). La temperatura a 4 m de profundidad fue <span class="math inline">\(\approx\)</span> 29.6 ºC, y la temperatura a 4.5 m de profundidad, reportada como la profundiad óptima, fue <span class="math inline">\(\approx\)</span> 28 ºC. Estas temperaturas sobrestiman la temperatura del suelo alrededor del EAHE porque fueron calculadas para el día más cálido en el interior del tubo (al que entra aire a temp_air). Sin embargo, concuerdan con que la media de la temperatura del suelo a 4 m de profundidad en mayo reportada en el EPW <span class="citation" data-cites="lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026"><a href="#ref-lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026" role="doc-biblioref">[1]</a></span> es una aproximación que tiene una variación máxima de <span class="math inline">\(\pm\)</span> 3 ºC a lo largo del año. Por lo tanto, se eligió la temperatura del suelo a 4 m en mayo como la temperatura de la pared del intercambiador:</p>
+<div id="64f13620" class="cell" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>Tw <span class="op">=</span> suelo.loc[<span class="st">"May"</span>, <span class="st">"4.0m"</span>]</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"La temperatura de la pared del intercambiador es Tw = </span><span class="sc">{</span>Tw<span class="sc">:.1f}</span><span class="ss"> °C"</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>La temperatura de la pared del intercambiador Tw = 26.9 °C</code></pre>
+<pre><code>La temperatura de la pared del intercambiador es Tw = 26.3 °C</code></pre>
 </div>
 </div>
+<p>Se supone que las propiedades físicas del suelo de Mérida (tipo arcilloso) son constantes: conductividad térmica k_s = 0.19 W / m ºC, calor específico cp_s = 114.6 kJ / kg ºC <span class="citation" data-cites="rodriguez-vazquez_thermal_2020"><a href="#ref-rodriguez-vazquez_thermal_2020" role="doc-biblioref">[3]</a></span>.</p>
 </section>
 <section id="restricciones" class="level2">
 <h2 class="anchored" data-anchor-id="restricciones">Restricciones</h2>
+<p>La efectividad (<span class="math inline">\(\epsilon\)</span>) de un EAHE se puede calcular con la <a href="#eq-epsilon" class="quarto-xref">Ecuación&nbsp;1</a>:</p>
+<p><span id="eq-epsilon"><span class="math display">\[ \epsilon = \frac{Tao - Tai}{Tw - Tai},  \tag{1}\]</span></span></p>
+<p>donde Tao es la temperatura del aire a la salida del intercambiador. Se estableció que la efectividad mínima de diseño es <span class="math inline">\(\epsilon\geq\)</span> 0.7, lo que implica que:</p>
+<div id="9d9c290f" class="cell" data-execution_count="4">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>epsilon <span class="op">=</span> <span class="fl">0.7</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>Tao <span class="op">=</span> epsilon <span class="op">*</span> (Tw <span class="op">-</span> Tai) <span class="op">+</span> Tai</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Tao ≤ </span><span class="sc">{</span>Tao<span class="sc">:.1f}</span><span class="ss"> °C."</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Tao ≤ 29.6 °C.</code></pre>
+</div>
+</div>
+<p>Los cambios de aire por hora (CAH) requeridos son:</p>
+<div id="1962c71a" class="cell" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>CAH <span class="op">=</span> <span class="dv">6</span></span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Para un local de dimensiones 3 m x 3 m x 3 m, el volumen es:</p>
+<div id="db22876e" class="cell" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>V <span class="op">=</span> <span class="dv">27</span> <span class="co"># m³</span></span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>El caudal volumétrico de aire (Q) requerido es:</p>
+<div id="723d068b" class="cell" data-execution_count="7">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>Q <span class="op">=</span> CAH <span class="op">*</span> V <span class="op">/</span> <span class="dv">3600</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Q = </span><span class="sc">{</span>Q<span class="sc">:.4f}</span><span class="ss"> m³/s."</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Q = 0.0450 m³/s.</code></pre>
+</div>
+</div>
+<p>Para tubos de PVC de diámetro exterior (D) de 2, 3, 4 y 5 pulgadas y 0.15 m:</p>
+<div id="f85a2eff" class="cell" data-execution_count="8">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>D <span class="op">=</span> np.array([<span class="fl">0.063</span>, <span class="fl">0.090</span>, <span class="fl">0.110</span>, <span class="fl">0.140</span>, <span class="fl">0.150</span>]) <span class="co"># m</span></span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>la velocidad del aire (v) dentro de los tubos son:</p>
+<div id="75f6103b" class="cell" data-execution_count="9">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>A <span class="op">=</span> np.pi <span class="op">*</span> (D <span class="op">/</span> <span class="dv">2</span>) <span class="op">**</span> <span class="dv">2</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>v <span class="op">=</span> Q <span class="op">/</span> A   </span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>v<span class="sc">.</span><span class="bu">round</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="ss"> m/s."</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[14.44  7.07  4.74  2.92  2.55] m/s.</code></pre>
+</div>
+</div>
+<p>El número de Reynolds (Re) para cada diámetro se calcula con la <a href="#eq-reynolds" class="quarto-xref">Ecuación&nbsp;2</a> <span class="citation" data-cites="incropera_fundamentals_2007"><a href="#ref-incropera_fundamentals_2007" role="doc-biblioref">[4]</a></span>:</p>
+<p><span id="eq-reynolds"><span class="math display">\[ Re = \frac{\rho v D}{\mu},  \tag{2}\]</span></span></p>
+<p>donde <span class="math inline">\(\rho=1.1614\)</span> kg/m³ es la densidad del aire y <span class="math inline">\(\mu=1.846\)</span> x 10⁻⁵ N·s/m² es la viscosidad dinámica del aire a 300 K <span class="citation" data-cites="incropera_fundamentals_2007"><a href="#ref-incropera_fundamentals_2007" role="doc-biblioref">[4]</a></span>:</p>
+<div id="125fde6d" class="cell" data-execution_count="10">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>rho <span class="op">=</span> <span class="fl">1.1614</span> <span class="co"># kg/m³</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>mu <span class="op">=</span> <span class="fl">1.846e-5</span> <span class="co"># N·s/m²</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>Re <span class="op">=</span> (rho <span class="op">*</span> v <span class="op">*</span> D) <span class="op">/</span> mu</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>Re<span class="sc">.</span><span class="bu">round</span>(<span class="dv">0</span>)<span class="sc">}</span><span class="ss">."</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[57218. 40053. 32770. 25748. 24032.].</code></pre>
+</div>
+</div>
+</section>
+<section id="longitud-mínima-del-tubo" class="level2">
+<h2 class="anchored" data-anchor-id="longitud-mínima-del-tubo">Longitud mínima del tubo</h2>
+<p>La efectividad se relaciona con el número de unidades de transferencia de calor (NTU) de acuerdo con la <a href="#eq-epsilonntu" class="quarto-xref">Ecuación&nbsp;3</a>:</p>
+<p><span id="eq-epsilonntu"><span class="math display">\[ \epsilon = 1 - e^{-NTU}.  \tag{3}\]</span></span></p>
+<p>NTU se calcula con la <a href="#eq-ntu" class="quarto-xref">Ecuación&nbsp;4</a>:</p>
+<p><span id="eq-ntu"><span class="math display">\[ NTU = \frac{h A}{\dot{m} c_p},  \tag{4}\]</span></span></p>
+<p>donde h (W/m²·K) es el coeficiente de transferencia de calor por convección, A (m²) es el área de transferencia de calor (<span class="math inline">\(A=\pi D L\)</span> para un tubo de longitud L), <span class="math inline">\(\dot{m}=\rho Q\)</span> (kg/s) es el flujo másico del aire y cp = 1.007 kJ/kg·K es el calor específico del aire <span class="citation" data-cites="incropera_fundamentals_2007"><a href="#ref-incropera_fundamentals_2007" role="doc-biblioref">[4]</a></span>.</p>
+<p>El coeficiente de transferencia de calor por convección se calcula con la <a href="#eq-h" class="quarto-xref">Ecuación&nbsp;5</a> <span class="citation" data-cites="incropera_fundamentals_2007"><a href="#ref-incropera_fundamentals_2007" role="doc-biblioref">[4]</a></span>:</p>
+<p><span id="eq-h"><span class="math display">\[ h = \frac{Nuk}{D},  \tag{5}\]</span></span></p>
+<p>donde k=2.63 x 10⁻² W/m·K es la conductividad térmica del aire a 300 K y Nu es el número de Nusselt, que se calcula con la <a href="#eq-nu" class="quarto-xref">Ecuación&nbsp;6</a> para flujo turbulento (2300 &lt; Re &lt; 5 x 10⁶) <span class="citation" data-cites="incropera_fundamentals_2007"><a href="#ref-incropera_fundamentals_2007" role="doc-biblioref">[4]</a></span>:</p>
+<p><span id="eq-nu"><span class="math display">\[ Nu = \frac{\frac{\varepsilon}{8} (Re - 1000) Pr}{1 + 12.7 (\varepsilon / 8)^{1/2} (Pr^{2/3} - 1)},\ 0.5 &lt; Pr &lt; 10^6  \tag{6}\]</span></span></p>
+<p>donde <span class="math inline">\(\varepsilon\)</span> es la rugosidad relativa del tubo, que se calcula con la <a href="#eq-rugosidad" class="quarto-xref">Ecuación&nbsp;7</a> <span class="citation" data-cites="anaya-durand_evaluacion_2014"><a href="#ref-anaya-durand_evaluacion_2014" role="doc-biblioref">[5]</a></span>:</p>
+<p><span id="eq-rugosidad"><span class="math display">\[ \varepsilon = (1.82 \log_{10}(Re) - 1.64)^{-2},  \tag{7}\]</span></span></p>
+<p>y Pr=0.707 es el número de Prandtl <span class="citation" data-cites="incropera_fundamentals_2007"><a href="#ref-incropera_fundamentals_2007" role="doc-biblioref">[4]</a></span>.</p>
+<p>Despejando la <a href="#eq-ntu" class="quarto-xref">Ecuación&nbsp;4</a> para L y sustituyendo las ecuaciones anteriores, se obtiene la longitud mínima del tubo (L) requerida para alcanzar la efectividad de diseño:</p>
+<p><span id="eq-L"><span class="math display">\[ L = \frac{NTUc_p\rho Q}{\pi Nu k}.  \tag{8}\]</span></span></p>
+<p>Despejando la <a href="#eq-epsilonntu" class="quarto-xref">Ecuación&nbsp;3</a> para NTU y sustituyendo en la ecuación anterior, se obtiene:</p>
+<p><span id="eq-L2"><span class="math display">\[ L = \frac{-\ln(1 - \epsilon) c_p \rho Q}{\pi Nu k}.  \tag{9}\]</span></span></p>
+<div id="d116f321" class="cell" data-execution_count="11">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Constantes</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>cp <span class="op">=</span> <span class="fl">1.007e3</span> <span class="co"># J/kg·K</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>k <span class="op">=</span> <span class="fl">2.63e-2</span> <span class="co"># W/m·K</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>Pr <span class="op">=</span> <span class="fl">0.707</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Cálculo de la rugosidad relativa</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>varepsilon <span class="op">=</span> (<span class="fl">1.82</span> <span class="op">*</span> np.log10(Re) <span class="op">-</span> <span class="fl">1.64</span>) <span class="op">**</span> (<span class="op">-</span><span class="dv">2</span>)</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Cálculo del número de Nusselt</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>Nu <span class="op">=</span> (varepsilon <span class="op">/</span> <span class="dv">8</span> <span class="op">*</span> (Re <span class="op">-</span> <span class="dv">1000</span>) <span class="op">*</span> Pr) <span class="op">/</span> (<span class="dv">1</span> <span class="op">+</span> <span class="fl">12.7</span> <span class="op">*</span> (varepsilon <span class="op">/</span> <span class="dv">8</span>) <span class="op">**</span> <span class="fl">0.5</span> <span class="op">*</span> (Pr <span class="op">**</span> (<span class="dv">2</span><span class="op">/</span><span class="dv">3</span>) <span class="op">-</span> <span class="dv">1</span>))</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Cálculo de la longitud mínima del tubo</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>L <span class="op">=</span> (<span class="op">-</span>np.log(<span class="dv">1</span> <span class="op">-</span> epsilon) <span class="op">*</span> cp <span class="op">*</span> rho <span class="op">*</span> Q) <span class="op">/</span> (np.pi <span class="op">*</span> Nu <span class="op">*</span> k)</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Nu = </span><span class="sc">{</span>Nu<span class="sc">.</span><span class="bu">round</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="ss">."</span>)</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"L = </span><span class="sc">{</span>L<span class="sc">.</span><span class="bu">round</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="ss"> m."</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Nu = [116.19  88.17  75.52  62.7   59.45].
+L = [ 6.6   8.7  10.15 12.23 12.9 ] m.</code></pre>
+</div>
+</div>
+<p>Se observa que L aumenta con el diámetro del tubo debido a que la velocidad del aire disminuye, lo que reduce el número de Reynolds y, por lo tanto, el número de Nusselt y el coeficiente de transferencia de calor por convección. Para tubos de 2, 3, 4 y 5 pulgadas, la longitud mínima requerida para alcanzar la efectividad de diseño es de aproximadamente 6.6, 8.7, 10.15 y 12.23 m, respectivamente. Para un tubo de 0.15 m de diámetro, la longitud mínima requerida es de aproximadamente 12.9 m. La viabilidad económica de instalar tubos de cada diámetro depende de evaluar las caídas de presión en un sistema con tubos de cada diámetro. Tomando en cuenta las dimensiones del local, se podrían instalar tramos de 3 m de longitud aproximadamente, de forma que se necesitarían 2 tubos de 2 pulgadas o 4 tubos de 5 pulgadas para alcanzar la longitud mínima requerida. Aunque el tubo de mayor diámetro implicaría mayores caídas de presión por codos y mayor costo por tubo, se tendrían que evaluar las caídas de presión de todo el sistema para determinar qué opción es más viable económicamente. En la siguiente gráfica se observa la relación entre la longitud del tubo y la efectividad para cada diámetro:</p>
+<div id="1170b451" class="cell" data-execution_count="12">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>epsilon <span class="op">=</span> np.linspace(<span class="fl">0.01</span>, <span class="fl">0.99</span>, <span class="dv">100</span>)</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Iterar sobre valores de Re y D simultáneamente</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> Re, d_val <span class="kw">in</span> <span class="bu">zip</span>(Re, D):</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Cálculo de la rugosidad relativa</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    varepsilon <span class="op">=</span> (<span class="fl">1.82</span> <span class="op">*</span> np.log10(Re) <span class="op">-</span> <span class="fl">1.64</span>) <span class="op">**</span> (<span class="op">-</span><span class="dv">2</span>)</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Cálculo del número de Nusselt</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>    Nu <span class="op">=</span> (varepsilon <span class="op">/</span> <span class="dv">8</span> <span class="op">*</span> (Re <span class="op">-</span> <span class="dv">1000</span>) <span class="op">*</span> Pr) <span class="op">/</span> (<span class="dv">1</span> <span class="op">+</span> <span class="fl">12.7</span> <span class="op">*</span> (varepsilon <span class="op">/</span> <span class="dv">8</span>) <span class="op">**</span> <span class="fl">0.5</span> <span class="op">*</span> (Pr <span class="op">**</span> (<span class="dv">2</span><span class="op">/</span><span class="dv">3</span>) <span class="op">-</span> <span class="dv">1</span>))</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Cálculo de la longitud mínima del tubo L</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>    L <span class="op">=</span> (<span class="op">-</span>np.log(<span class="dv">1</span> <span class="op">-</span> epsilon) <span class="op">*</span> cp <span class="op">*</span> rho <span class="op">*</span> Q) <span class="op">/</span> (np.pi <span class="op">*</span> Nu <span class="op">*</span> k)</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Gráfica epsilon vs L para cada diámetro</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    plt.plot(L, epsilon, label<span class="op">=</span><span class="ss">f'D = </span><span class="sc">{</span>d_val<span class="sc">}</span><span class="ss"> m'</span>)</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Línea horizontal en epsilon = 0.7</span></span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>plt.axhline(y<span class="op">=</span><span class="fl">0.7</span>, color<span class="op">=</span><span class="st">'black'</span>, linestyle<span class="op">=</span><span class="st">'--'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="vs">r'</span><span class="dv">$</span><span class="er">\</span><span class="vs">epsilon = 0</span><span class="dv">.</span><span class="vs">7</span><span class="dv">$</span><span class="vs">'</span>)</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">'$L$ [m]'</span>)</span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="vs">r'</span><span class="dv">$</span><span class="er">\</span><span class="vs">epsilon</span><span class="dv">$</span><span class="vs"> </span><span class="pp">[-]</span><span class="vs">'</span>)</span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a>plt.grid(<span class="va">True</span>, linestyle<span class="op">=</span><span class="st">'--'</span>, alpha<span class="op">=</span><span class="fl">0.7</span>)</span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>plt.legend()</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="disenoEAHE_files/figure-html/cell-13-output-1.png" width="813" height="504" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Se observa que para <span class="math inline">\(\epsilon\)</span> = 0.6, la longitud mínima de los tubos de todos los diámetros es menor a 10 m, por lo que si se considera esta efectividad en el diseño, se podría seleccionar el diámetro de tubo que minimice los costos del material y las caídas de presión y mantener la longitud de los tubos por debajo de 10 m. Se tendría que evaluar si la Tao a una efectividad de 0.6 es suficiente para el confort térmico del local y también habría que evaluar la diferencia de Tao entre una efectividad de 0.6 y una efectividad de 0.7 para determinar si la reducción en la longitud del tubo justifica la reducción en la efectividad.</p>
 </section>
 <section id="referencias" class="level2 unnumbered">
 
@@ -215,6 +375,18 @@ Variación   5.75   4.24   2.91</code></pre>
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" role="doc-bibliography" id="quarto-bibliography"><h2 class="anchored quarto-appendix-heading">Referencias</h2><div id="refs" class="references csl-bib-body" data-entry-spacing="0" role="list">
 <div id="ref-lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026" class="csl-entry" role="listitem">
 <div class="csl-left-margin">[1] </div><div class="csl-right-inline">L. K. Lawrie y D. B. Crawley, <span>“<span>\</span>climatewebsite<span>\</span><span>WMO</span>_Region_4_North_and_Central_America<span>\</span><span>MEX</span>_Mexico”</span>, <em>Development of Global Typical Meteorological Years (TMYx)</em>. Climate.OneBuilding, 2026. Consultado: el 31 de mayo de 2026. [En línea]. Disponible en: <a href="https://climate.onebuilding.org/WMO_Region_4_North_and_Central_America/MEX_Mexico/YUC_Yucatan/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.zip">https://climate.onebuilding.org/WMO_Region_4_North_and_Central_America/MEX_Mexico/YUC_Yucatan/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.zip</a></div>
+</div>
+<div id="ref-driss_cfd_2018" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[2] </div><div class="csl-right-inline">Z. Driss, B. Necib, y H.-C. Zhang, Eds., <em><span>CFD</span> <span>Techniques</span> and <span>Thermo</span>-<span>Mechanics</span> <span>Applications</span></em>. Cham: Springer International Publishing, 2018. doi: <a href="https://doi.org/10.1007/978-3-319-70945-1">10.1007/978-3-319-70945-1</a>.</div>
+</div>
+<div id="ref-rodriguez-vazquez_thermal_2020" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[3] </div><div class="csl-right-inline">M. Rodríguez-Vázquez, J. Xamán, Y. Chávez, I. Hernández-Pérez, y E. Simá, <span>“Thermal potential of a geothermal earth-to-air heat exchanger in six climatic conditions of <span>México</span>”</span>, <em>Mechanics &amp; Industry</em>, vol. 21, núm. 3, p. 308, 2020, doi: <a href="https://doi.org/10.1051/meca/2020016">10.1051/meca/2020016</a>.</div>
+</div>
+<div id="ref-incropera_fundamentals_2007" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[4] </div><div class="csl-right-inline">F. P. Incropera, D. P. DeWitt, T. L. Bergman, y A. S. Lavine, Eds., <em>Fundamentals of heat and mass transfer</em>, 6. ed. Hoboken, NJ: Wiley, 2007.</div>
+</div>
+<div id="ref-anaya-durand_evaluacion_2014" class="csl-entry" role="listitem">
+<div class="csl-left-margin">[5] </div><div class="csl-right-inline">A. I. Anaya-Durand, G. I. Cauich-Segovia, O. Funabazama-Bárcenas, y V. Alfonso Gracia-Medrano-Bravo, <span>“Evaluación de ecuaciones de factor de fricción explícito para tuberías”</span>, <em>Educación Química</em>, vol. 25, núm. 2, pp. 128–134, abr. 2014, doi: <a href="https://doi.org/10.1016/S0187-893X(14)70535-X">10.1016/S0187-893X(14)70535-X</a>.</div>
 </div>
 </div></section></div></main>
 <!-- /main column -->

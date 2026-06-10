@@ -1,0 +1,127 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: Diseño de EAHE (Mérida, Yucatán)\n",
+        "---\n",
+        "\n",
+        "## Temperatura del aire y del suelo\n",
+        "\n",
+        "Los valores de temperatura del aire y del suelo a diferentes profundidades en Mérida, Yucatán se obtuvieron de @lawrie_climatewebsitewmo_region_4_north_and_central_americamex_mexico_2026, un archivo *.epw (EnergyPlus Weather) que contiene datos climáticos horarios para un año meteorológico típico (TMY) calculado con los datos de 15 años (2011-2025).\n",
+        "\n",
+        "La temperatura del aire que entra el intercambiador de calor (Tai) se calculó como la temperatura máxima diaria media mensual del mes con la temperatura media más alta:"
+      ],
+      "id": "8603952c"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from pvlib.iotools import read_epw # Importar la función para leer archivos EPW\n",
+        "# Leer el archivo EPW\n",
+        "datos, metadatos = read_epw(\"data/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.epw\")\n",
+        "# Obtener el mes con la temperatura media más alta\n",
+        "mes = datos.temp_air.resample(\"ME\").mean().idxmax().month # calcular la media mensual de la temp_air y obtener el mes con la temperatura media más alta\n",
+        "# Obtener la temperatura máxima diaria media mensual del mes con la temperatura media más alta\n",
+        "Tai = datos[datos.index.month == mes].temp_air.resample(\"D\").max().mean()\n",
+        "print(f\"El mes con la temperatura media más alta es: {mes}. La temperatura máxima diaria media mensual del mes con la temperatura media más alta es: {Tai:.1f} °C\")"
+      ],
+      "id": "0a1e3e1a",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "import pandas as pd\n",
+        "months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']\n",
+        "datos_suelo = {}\n",
+        "\n",
+        "with open('data/MEX_YUC_Merida-Rejon.Intl.AP.766440_TMYx.2011-2025.epw', 'r') as f:\n",
+        "    for line in f:\n",
+        "        if line.startswith('DATA PERIODS'):\n",
+        "            break\n",
+        "            \n",
+        "        if line.startswith('GROUND TEMPERATURES'):\n",
+        "            parts = line.strip().split(',')\n",
+        "            tokens = parts[2:]\n",
+        "            \n",
+        "            i = 0\n",
+        "            while i < len(tokens):\n",
+        "                if tokens[i] == '':\n",
+        "                    i += 1\n",
+        "                    continue\n",
+        "                \n",
+        "                depth = float(tokens[i])\n",
+        "                i += 4 \n",
+        "                \n",
+        "                monthly_values = []\n",
+        "                for _ in range(12):\n",
+        "                    monthly_values.append(float(tokens[i]))\n",
+        "                    i += 1\n",
+        "                \n",
+        "                datos_suelo[f\"{depth}m\"] = monthly_values\n",
+        "\n",
+        "suelo = pd.DataFrame(datos_suelo, index=months)\n",
+        "\n",
+        "media = suelo.mean()\n",
+        "variacion = suelo.max() - suelo.min()\n",
+        "\n",
+        "suelo.loc['Media'] = media\n",
+        "suelo.loc['Variación'] = variacion\n",
+        "\n",
+        "print(suelo.round(2))"
+      ],
+      "id": "8d805360",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "La temperatura media del suelo es similar en todas las profundidades. Se eligió la temperatura del suelo a 4 m en mayo como la temperatura de la pared del intercambiador porque tiene la variación mensual a lo largo del año más baja:"
+      ],
+      "id": "a4c22c8d"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "Tw = suelo.loc[\"May\", \"4.0m\"]\n",
+        "print(f\"La temperatura de la pared del intercambiador Tw = {Tw:.1f} °C\")"
+      ],
+      "id": "e40d9220",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "De acuerdo con el modelo numérico de @driss_cfd_2018, la temperatura del aire dentro de un EAHE tubuluar horizontal de 0.15 m de diámetro disminuye 1.6 ºC por cada incremento en la profundidad de 0.5 m en Mérida el día más cálido (20/05 12:00, temp_air = 39.8 ºC). La temperatura a 4 m de profundidad fue $\\approx$ 29.6 ºC. \n",
+        "\n",
+        "## Restricciones\n",
+        "\n",
+        "\n",
+        "\n",
+        "## Referencias"
+      ],
+      "id": "ae2aced4"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "/home/acb/disenoEAHE/.venv/share/jupyter/kernels/python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
